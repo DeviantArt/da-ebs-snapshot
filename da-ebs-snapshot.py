@@ -87,7 +87,7 @@ def lock_mysql(mysql):
 def freeze_fs(mountpoint):
     print "freezing filesystem mounted at", mountpoint
     proc = subprocess.check_output(['/sbin/fsfreeze', '-f', mountpoint])
-    print 'fsfreeze -f returned: %s' % proc
+    print 'fsfreeze -f output: %s' % proc
 
 
 def snapshot(conn, volume_id):
@@ -98,7 +98,7 @@ def snapshot(conn, volume_id):
 def unfreeze_fs(mountpoint):
     print "unfreezing filesystem mounted at", mountpoint
     proc = subprocess.check_output(['/sbin/fsfreeze', '-u', mountpoint])
-    print 'fsfreeze -u returned: %s' % proc
+    print 'fsfreeze -u output: %s' % proc
 
 
 def unlock_mysql(mysql):
