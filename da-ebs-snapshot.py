@@ -119,13 +119,13 @@ def main():
     except Exception, e:
         print "ERROR encountered: %s: %s" % (type(e), e)
         print "will attempt to unfreeze filesystem and unlock MySQL..."
+    else:
+        declare_victory()
     finally:
         unfreeze_fs(config.mountpoint)
 
         if mysql:
             unlock_mysql(mysql)
-    else:
-        declare_victory()
 
 
 if __name__ == '__main__':
