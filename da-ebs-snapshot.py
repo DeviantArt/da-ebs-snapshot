@@ -2,6 +2,7 @@
 
 import sys
 import os
+import re
 import subprocess
 import boto.ec2
 import boto.utils
@@ -16,7 +17,6 @@ def parse_args():
     #parser.add_argument('-n', '--dry-run', action='store_true', help='help text')
     parser.add_argument('--access-key-id')
     parser.add_argument('--secret-access-key')
-    parser.add_argument('-r', '--region', default='us-east-1', help='EC2 region of EBS volume (default: %(default)s)')
 
     args = parser.parse_args()
     return args
@@ -38,10 +38,21 @@ def get_block_device(mountpoint):
     return mounts[mountpoint]
 
 
-def connect_ec2(config):
+def get_region():
+    print "determining region"
+
+    availability_zone = boto.utils.get_instance_metadata()['placement']['availability-zone']
+    region = re.sub('[a-z]+$', '', availability_zone)
+
+    print "region is", region
+
+    return region
+
+
+def connect_ec2(config, region):
     print "connecting to EC2"
 
-    conn = boto.ec2.connect_to_region(config.region,
+    conn = boto.ec2.connect_to_region(region,
                                       aws_access_key_id=config.access_key_id,
                                       aws_secret_access_key=config.secret_access_key)
     return conn
@@ -101,7 +112,8 @@ def declare_victory():
 
 def main():
     config = parse_args()
-    conn = connect_ec2(config)
+    region = get_region()
+    conn = connect_ec2(config, region)
 
     mysql = None
 
