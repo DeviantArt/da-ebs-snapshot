@@ -13,7 +13,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description='snapshot EBS volumes')
 
     parser.add_argument('mountpoint', help='mount point of volume to snapshot')
-    parser.add_argument('-n', '--dry-run', action='store_true', help='help text')
+    #parser.add_argument('-n', '--dry-run', action='store_true', help='help text')
     parser.add_argument('--access-key-id')
     parser.add_argument('--secret-access-key')
     parser.add_argument('-r', '--region', default='us-east-1', help='EC2 region of EBS volume (default: %(default)s)')
