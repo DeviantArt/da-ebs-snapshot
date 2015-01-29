@@ -3,6 +3,7 @@
 import sys
 import os
 import re
+import socket
 import subprocess
 import boto.ec2
 import boto.utils
@@ -13,7 +14,7 @@ import MySQLdb
 def parse_args():
     parser = argparse.ArgumentParser(description='snapshot EBS volumes')
 
-    parser.add_argument('mountpoint', help='mount point of volume to snapshot')
+    parser.add_argument('mountpoints', nargs='+', help='mount point of volume to snapshot')
     #parser.add_argument('-n', '--dry-run', action='store_true', help='help text')
     parser.add_argument('--access-key-id')
     parser.add_argument('--secret-access-key')
@@ -90,9 +91,13 @@ def freeze_fs(mountpoint):
     print 'fsfreeze -f output: %s' % proc
 
 
-def snapshot(conn, volume_id):
-    print "taking snapshot of", volume_id
-    return conn.create_snapshot(volume_id)
+def get_snapshot_description(mountpoint):
+    return "%s:%s" % (socket.getfqdn(), mountpoint)
+
+
+def snapshot(conn, volume_id, description):
+    print "taking snapshot of %s (%s)" % (volume_id, description)
+    return conn.create_snapshot(volume_id, description)
 
 
 def unfreeze_fs(mountpoint):
@@ -118,19 +123,24 @@ def main():
     mysql = None
 
     try:
-        block_device = get_block_device(config.mountpoint)
-        volume_id = get_volume_id(conn, block_device)
+        block_devices = [get_block_device(mp) for mp in config.mountpoints]
+        volume_ids = [get_volume_id(conn, bdev) for bdev in block_devices]
         mysql = connect_mysql(config)
         lock_mysql(mysql)
-        freeze_fs(config.mountpoint)
-        print snapshot(conn, volume_id)
+
+        for mountpoint in config.mountpoints:
+            freeze_fs(mountpoint)
+
+        for volume_id, mountpoint in zip(volume_ids, config.mountpoints):
+            print snapshot(conn, volume_id, get_snapshot_description(mountpoint))
     except Exception, e:
         print "ERROR encountered: %s: %s" % (type(e), e)
         print "will attempt to unfreeze filesystem and unlock MySQL..."
     else:
         declare_victory()
     finally:
-        unfreeze_fs(config.mountpoint)
+        for mountpoint in reversed(config.mountpoints):
+            unfreeze_fs(mountpoint)
 
         if mysql:
             unlock_mysql(mysql)
