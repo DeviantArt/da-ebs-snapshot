@@ -55,8 +55,7 @@ def get_volume_id(conn, block_device):
 
     instance_id = boto.utils.get_instance_metadata()['instance-id']
     volumes = conn.get_all_volumes(filters={
-                                            'attachment.instance-id': instance_id
-                                           })
+        'attachment.instance-id': instance_id})
     for volume in volumes:
         if volume.attach_data.device == block_device:
             return volume.id
