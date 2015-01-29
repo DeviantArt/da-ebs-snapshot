@@ -59,6 +59,10 @@ def connect_ec2(config, region):
     return conn
 
 
+def normalize_bdev(bdev):
+    return re.sub('^/dev/s', '/dev/xv', bdev)
+
+
 def get_volume_id(conn, block_device):
     print "searching for EBS volume ID of", block_device
 
@@ -66,11 +70,11 @@ def get_volume_id(conn, block_device):
     volumes = conn.get_all_volumes(filters={
         'attachment.instance-id': instance_id})
     for volume in volumes:
-        if volume.attach_data.device == block_device:
+        if normalize_bdev(volume.attach_data.device) == normalize_bdev(block_device):
+            print "volume ID is", volume.id
             return volume.id
-        if volume.attach_data.device.replace('/dev/xv', '/dev/s'):
-            return volume.id
-    return None
+
+    raise Exception("EBS volume for %s not found!" % block_device)
 
 
 def connect_mysql(config):
@@ -98,7 +102,9 @@ def get_snapshot_description(mountpoint):
 
 def snapshot(conn, volume_id, description):
     print "taking snapshot of %s (%s)" % (volume_id, description)
-    return conn.create_snapshot(volume_id, description)
+    snapshot = conn.create_snapshot(volume_id)
+    snapshot.add_tag('Name', description)
+    return snapshot.id
 
 
 def unfreeze_fs(mountpoint):
