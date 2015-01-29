@@ -30,6 +30,8 @@ def find_dependencies(config):
 
 
 def get_block_device(mountpoint):
+    print "searching for block device mounted at", mountpoint
+
     mounts = {}
     with open('/proc/mounts', 'r') as proc_mounts:
         lines = proc_mounts.read().splitlines()
@@ -40,6 +42,8 @@ def get_block_device(mountpoint):
 
 
 def connect_ec2(config):
+    print "connecting to EC2"
+
     conn = boto.ec2.connect_to_region(config.region,
                                       aws_access_key_id=config.access_key_id,
                                       aws_secret_access_key=config.secret_access_key)
@@ -47,6 +51,8 @@ def connect_ec2(config):
 
 
 def get_volume_id(conn, block_device):
+    print "searching for EBS volume ID of", block_device
+
     instance_id = boto.utils.get_instance_metadata()['instance-id']
     volumes = conn.get_all_volumes(filters={
                                             'attachment.instance-id': instance_id
@@ -60,30 +66,37 @@ def get_volume_id(conn, block_device):
 
 
 def connect_mysql(config):
+    print "connecting to MySQL"
+
     conn = MySQLdb.connect(host=config.mysql_host, user=config.mysql_user,
                            passwd=config.mysql_password, db='')
     return conn.cursor()
 
 
 def lock_mysql(mysql):
+    print "running FLUSH TABLES WITH READ LOCK"
     mysql.execute('FLUSH TABLES WITH READ LOCK')
 
 
 def freeze_fs(mountpoint):
+    print "freezing filesystem mounted at", mountpoint
     proc = subprocess.check_output(['/sbin/fsfreeze', '-f', mountpoint])
     print 'fsfreeze -f returned: %s' % proc
 
 
 def snapshot(conn, volume_id):
+    print "taking snapshot of", volume_id
     return conn.create_snapshot(volume_id)
 
 
 def unfreeze_fs(mountpoint):
+    print "unfreezing filesystem mounted at", mountpoint
     proc = subprocess.check_output(['/sbin/fsfreeze', '-u', mountpoint])
     print 'fsfreeze -u returned: %s' % proc
 
 
 def unlock_mysql(mysql):
+    print "running UNLOCK TABLES"
     mysql.execute('UNLOCK TABLES')
 
 
@@ -95,15 +108,25 @@ def main():
     config = parse_args()
     conn = connect_ec2(config)
 
-    block_device = get_block_device(config.mountpoint)
-    volume_id = get_volume_id(conn, block_device)
-    mysql = connect_mysql(config)
-    lock_mysql(mysql)
-    freeze_fs(config.mountpoint)
-    print snapshot(conn, volume_id)
-    unfreeze_fs(config.mountpoint)
-    unlock_mysql(mysql)
-    declare_victory()
+    mysql = None
+
+    try:
+        block_device = get_block_device(config.mountpoint)
+        volume_id = get_volume_id(conn, block_device)
+        mysql = connect_mysql(config)
+        lock_mysql(mysql)
+        freeze_fs(config.mountpoint)
+        print snapshot(conn, volume_id)
+    except Exception, e:
+        print "ERROR encountered: %s: %s" % (type(e), e)
+        print "will attempt to unfreeze filesystem and unlock MySQL..."
+    finally:
+        unfreeze_fs(config.mountpoint)
+
+        if mysql:
+            unlock_mysql(mysql)
+    else:
+        declare_victory()
 
 
 if __name__ == '__main__':
