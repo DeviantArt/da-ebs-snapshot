@@ -17,9 +17,6 @@ def parse_args():
     parser.add_argument('--access-key-id')
     parser.add_argument('--secret-access-key')
     parser.add_argument('-r', '--region', default='us-east-1', help='EC2 region of EBS volume (default: %(default)s)')
-    parser.add_argument('--mysql-host')
-    parser.add_argument('--mysql-user')
-    parser.add_argument('--mysql-password')
 
     args = parser.parse_args()
     return args
@@ -67,8 +64,7 @@ def get_volume_id(conn, block_device):
 def connect_mysql(config):
     print "connecting to MySQL"
 
-    conn = MySQLdb.connect(host=config.mysql_host, user=config.mysql_user,
-                           passwd=config.mysql_password, db='')
+    conn = MySQLdb.connect(read_default_file='/root/.my.cnf')
     return conn.cursor()
 
 
