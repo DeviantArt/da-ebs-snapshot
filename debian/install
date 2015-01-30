@@ -1,0 +1,3 @@
+da_aws.py /usr/local/lib/python
+da-ebs-snapshot /usr/local/bin
+da-prune-snapshots /usr/local/bin

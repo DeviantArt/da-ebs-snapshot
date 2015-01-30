@@ -1,0 +1,18 @@
+Source: da-ebs-tools
+Section: misc
+Priority: extra
+Maintainer: Lex Neva <lex@deviantart.com>
+Build-Depends: debhelper (>= 8.0.0)
+Standards-Version: 3.9.4
+Homepage: https://github.com/DeviantArt/da-ebs-tools
+#Vcs-Git: git://git@github.com/DeviantArt/da-ebs-tools.git
+
+Package: da-ebs-tools
+Architecture: all
+Depends: ${python:Depends}, python-boto, python-dateutil
+Description: DeviantArt EBS consistent snapshot and expiration utilities
+ This package contains two utilities:
+   * da-ebs-snapshot - Lock tables in MySQL, freeze one or more filesystems,
+     and take EBS snapshots of them.
+   * da-prune-snapshots - Prune snapshots of volumes on the local instance
+     based on their ttl tag.
