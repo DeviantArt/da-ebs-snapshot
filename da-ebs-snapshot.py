@@ -3,6 +3,7 @@
 import sys
 import os
 import re
+import uuid
 import socket
 import subprocess
 import boto.ec2
@@ -18,9 +19,14 @@ def parse_args():
     #parser.add_argument('-n', '--dry-run', action='store_true', help='help text')
     parser.add_argument('--access-key-id')
     parser.add_argument('--secret-access-key')
+    parser.add_argument('-t', '--tag', dest='tags', action='append', metavar='NAME=VALUE')
 
     args = parser.parse_args()
     return args
+
+
+def generate_uuid(config):
+    config.tags.append("uuid=%s" % uuid.uuid4())
 
 
 def find_dependencies(config):
@@ -100,11 +106,19 @@ def get_snapshot_description(mount_point):
     return "%s:%s" % (socket.getfqdn(), mount_point)
 
 
-def snapshot(conn, volume_id, description):
-    print "taking snapshot of %s (%s)" % (volume_id, description)
+def create_snapshot(conn, volume_id):
+    print "taking snapshot of %s" % volume_id
     snapshot = conn.create_snapshot(volume_id)
-    snapshot.add_tag('Name', description)
-    return snapshot.id
+    print snapshot.id
+    return snapshot
+
+
+def tag_snapshot(snapshot, mount_point, additional_tags=[]):
+    snapshot.add_tag('Name', get_snapshot_description(mount_point))
+
+    for tag in additional_tags:
+        name, value = tag.split('=', 1)
+        snapshot.add_tag(name, value)
 
 
 def unfreeze_fs(mount_point):
@@ -125,6 +139,7 @@ def declare_victory():
 
 def main():
     config = parse_args()
+    generate_uuid(config)
     region = get_region()
     conn = connect_ec2(config, region)
 
@@ -140,7 +155,8 @@ def main():
             freeze_fs(mount_point)
 
         for volume_id, mount_point in zip(volume_ids, config.mount_points):
-            print snapshot(conn, volume_id, get_snapshot_description(mount_point))
+            snapshot = create_snapshot(conn, volume_id)
+            tag_snapshot(snapshot, mount_point, config.tags)
     except Exception, e:
         print "ERROR encountered: %s: %s" % (type(e), e)
         print "will attempt to unfreeze filesystem and unlock MySQL..."
