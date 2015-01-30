@@ -9,7 +9,7 @@ This utility creates a consistent snapshot of one or more local filesystems.  Gi
 da-prune-snapshots
 ------------------
 
-This utility prunes snapshots of volumes attached to the current instance.  It uses the `ttl` tag on the snapshot to determine whether it has expired and should be deleted.  When using `da-ebs-snapshot`, add a `--tag ttl=86400` tag to schedule the snapshot(s) for deletion after 1 day.
+This utility prunes snapshots of volumes attached to the current instance.  It uses the `ttl` tag on the snapshot to determine whether it has expired and should be deleted.  When using `da-ebs-snapshot`, add a `--tag ttl=86400` tag to schedule the snapshot(s) for deletion after 1 day.  For x hours/x days/x weeks/x months snapshot retention schemes, use multiple cron jobs run hourly, daily, weekly, etc, each with a different TTL.
 
 library
 -------
