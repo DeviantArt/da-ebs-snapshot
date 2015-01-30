@@ -14,7 +14,7 @@ import MySQLdb
 def parse_args():
     parser = argparse.ArgumentParser(description='snapshot EBS volumes')
 
-    parser.add_argument('mountpoints', nargs='+', help='mount point of volume to snapshot')
+    parser.add_argument('mount_points', nargs='+', help='mount point of volume to snapshot')
     #parser.add_argument('-n', '--dry-run', action='store_true', help='help text')
     parser.add_argument('--access-key-id')
     parser.add_argument('--secret-access-key')
@@ -27,8 +27,8 @@ def find_dependencies(config):
     pass
 
 
-def get_block_device(mountpoint):
-    print "searching for block device mounted at", mountpoint
+def get_block_device(mount_point):
+    print "searching for block device mounted at", mount_point
 
     mounts = {}
     with open('/proc/mounts', 'r') as proc_mounts:
@@ -36,7 +36,7 @@ def get_block_device(mountpoint):
     for line in lines:
         columns = line.split(' ')
         mounts[columns[1]] = columns[0]
-    return mounts[mountpoint]
+    return mounts[mount_point]
 
 
 def get_region():
@@ -89,15 +89,15 @@ def lock_mysql(mysql):
     mysql.execute('FLUSH TABLES WITH READ LOCK')
 
 
-def freeze_fs(mountpoint):
-    print "freezing filesystem mounted at", mountpoint
-    output = subprocess.check_output(['/sbin/fsfreeze', '-f', mountpoint])
+def freeze_fs(mount_point):
+    print "freezing filesystem mounted at", mount_point
+    output = subprocess.check_output(['/sbin/fsfreeze', '-f', mount_point])
     if output:
         print 'fsfreeze -f output: %s' % output
 
 
-def get_snapshot_description(mountpoint):
-    return "%s:%s" % (socket.getfqdn(), mountpoint)
+def get_snapshot_description(mount_point):
+    return "%s:%s" % (socket.getfqdn(), mount_point)
 
 
 def snapshot(conn, volume_id, description):
@@ -107,9 +107,9 @@ def snapshot(conn, volume_id, description):
     return snapshot.id
 
 
-def unfreeze_fs(mountpoint):
-    print "unfreezing filesystem mounted at", mountpoint
-    output = subprocess.check_output(['/sbin/fsfreeze', '-u', mountpoint])
+def unfreeze_fs(mount_point):
+    print "unfreezing filesystem mounted at", mount_point
+    output = subprocess.check_output(['/sbin/fsfreeze', '-u', mount_point])
     if output:
         print 'fsfreeze -u output: %s' % output
 
@@ -131,24 +131,24 @@ def main():
     mysql = None
 
     try:
-        block_devices = [get_block_device(mp) for mp in config.mountpoints]
+        block_devices = [get_block_device(mp) for mp in config.mount_points]
         volume_ids = [get_volume_id(conn, bdev) for bdev in block_devices]
         mysql = connect_mysql(config)
         lock_mysql(mysql)
 
-        for mountpoint in config.mountpoints:
-            freeze_fs(mountpoint)
+        for mount_point in config.mount_points:
+            freeze_fs(mount_point)
 
-        for volume_id, mountpoint in zip(volume_ids, config.mountpoints):
-            print snapshot(conn, volume_id, get_snapshot_description(mountpoint))
+        for volume_id, mount_point in zip(volume_ids, config.mount_points):
+            print snapshot(conn, volume_id, get_snapshot_description(mount_point))
     except Exception, e:
         print "ERROR encountered: %s: %s" % (type(e), e)
         print "will attempt to unfreeze filesystem and unlock MySQL..."
     else:
         declare_victory()
     finally:
-        for mountpoint in reversed(config.mountpoints):
-            unfreeze_fs(mountpoint)
+        for mount_point in reversed(config.mount_points):
+            unfreeze_fs(mount_point)
 
         if mysql:
             unlock_mysql(mysql)
