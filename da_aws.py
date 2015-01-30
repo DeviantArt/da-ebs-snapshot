@@ -21,7 +21,7 @@ def connect_ec2(access_key_id=None, secret_access_key=None, region=None):
                                       aws_secret_access_key=secret_access_key)
     return conn
 
+
 def get_my_volumes(conn):
     instance_id = boto.utils.get_instance_metadata()['instance-id']
     return conn.get_all_volumes(filters={'attachment.instance-id': instance_id})
-
