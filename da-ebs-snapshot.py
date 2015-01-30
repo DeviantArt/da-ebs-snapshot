@@ -31,10 +31,6 @@ def generate_uuid(config):
     config.tags.append("uuid=%s" % uuid.uuid4())
 
 
-def find_dependencies(config):
-    pass
-
-
 def get_block_device(mount_point):
     print "searching for block device mounted at", mount_point
 
