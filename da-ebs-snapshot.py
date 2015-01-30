@@ -11,6 +11,8 @@ import boto.utils
 import argparse
 import MySQLdb
 
+from da_aws import connect_ec2, get_my_volumes
+
 
 def parse_args():
     parser = argparse.ArgumentParser(description='snapshot EBS volumes')
@@ -45,26 +47,6 @@ def get_block_device(mount_point):
     return mounts[mount_point]
 
 
-def get_region():
-    print "determining region"
-
-    availability_zone = boto.utils.get_instance_metadata()['placement']['availability-zone']
-    region = re.sub('[a-z]+$', '', availability_zone)
-
-    print "region is", region
-
-    return region
-
-
-def connect_ec2(config, region):
-    print "connecting to EC2"
-
-    conn = boto.ec2.connect_to_region(region,
-                                      aws_access_key_id=config.access_key_id,
-                                      aws_secret_access_key=config.secret_access_key)
-    return conn
-
-
 def normalize_bdev(bdev):
     return re.sub('^/dev/s', '/dev/xv', bdev)
 
@@ -72,9 +54,7 @@ def normalize_bdev(bdev):
 def get_volume_id(conn, block_device):
     print "searching for EBS volume ID of", block_device
 
-    instance_id = boto.utils.get_instance_metadata()['instance-id']
-    volumes = conn.get_all_volumes(filters={
-        'attachment.instance-id': instance_id})
+    volumes = get_my_volumes(conn)
     for volume in volumes:
         if normalize_bdev(volume.attach_data.device) == normalize_bdev(block_device):
             print "volume ID is", volume.id
@@ -140,8 +120,7 @@ def declare_victory():
 def main():
     config = parse_args()
     generate_uuid(config)
-    region = get_region()
-    conn = connect_ec2(config, region)
+    conn = connect_ec2(config.access_key_id, config.secret_access_key)
 
     mysql = None
 
