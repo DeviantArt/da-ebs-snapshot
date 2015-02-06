@@ -1,3 +1,9 @@
+da-ebs-tools (1.1-1) UNRELEASED; urgency=medium
+
+  * make da-prune-snapshots handle multiple regions
+
+ -- Lex Neva <lex@deviantart.com>  Fri, 06 Feb 2015 15:00:44 -0500
+
 da-ebs-tools (1.0-1) stable; urgency=low
 
   * Initial release

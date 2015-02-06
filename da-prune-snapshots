@@ -27,7 +27,8 @@ def parse_args():
 
     parser.add_argument('--access-key-id')
     parser.add_argument('--secret-access-key')
-    parser.add_argument('--all', help="clean all snapshots with ttl tags, not just those for volumes attached to this instance")
+    parser.add_argument('--all', action='store_true', help="clean all snapshots with ttl tags, not just those for volumes attached to this instance")
+    parser.add_argument('--region', dest='regions', action='append', help="region to target (default: local region)")
 
     args = parser.parse_args()
     return args
@@ -35,32 +36,37 @@ def parse_args():
 
 def main():
     config = parse_args()
-    conn = connect_ec2(config.access_key_id, config.secret_access_key)
 
-    if config.all:
-        volumes = [v.id for v in get_my_volumes(conn)]
-        snapshots = conn.get_all_snapshots(filters={'volume-id': volumes})
-    else:
-        snapshots = conn.get_all_snapshots()
+    if not config.regions:
+        config.regions = [None]
 
     # Someone please explain to me why utcnow() produces a timezone-naive
     # datetime.
     now = datetime.utcnow().replace(tzinfo=UTC)
 
-    for snapshot in snapshots:
-        if 'ttl' in snapshot.tags:
-            try:
-                ttl = int(snapshot.tags['ttl'])
-            except ValueError:
-                continue
+    for region in config.regions:
+        conn = connect_ec2(config.access_key_id, config.secret_access_key, region=region)
 
-            print "considering", snapshot.id
+        if config.all:
+            snapshots = conn.get_all_snapshots()
+        else:
+            volumes = [v.id for v in get_my_volumes(conn)]
+            snapshots = conn.get_all_snapshots(filters={'volume-id': volumes})
 
-            cutoff = parse_datetime(snapshot.start_time) + timedelta(seconds=ttl)
+        for snapshot in snapshots:
+            if 'ttl' in snapshot.tags:
+                try:
+                    ttl = int(snapshot.tags['ttl'])
+                except ValueError:
+                    continue
 
-            if now > cutoff:
-                print "deleting", snapshot.id
-                snapshot.delete()
+                print "considering", snapshot.id
+
+                cutoff = parse_datetime(snapshot.start_time) + timedelta(seconds=ttl)
+
+                if now > cutoff:
+                    print "deleting", snapshot.id
+                    snapshot.delete()
 
 
 if __name__ == '__main__':
