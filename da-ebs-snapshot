@@ -22,6 +22,7 @@ def parse_args():
     parser.add_argument('--access-key-id')
     parser.add_argument('--secret-access-key')
     parser.add_argument('-t', '--tag', dest='tags', action='append', metavar='NAME=VALUE')
+    parser.add_argument('-m', '--no-mysql', action='store_true', help="don't perform mysql steps")
 
     args = parser.parse_args()
     return args
@@ -123,8 +124,10 @@ def main():
     try:
         block_devices = [get_block_device(mp) for mp in config.mount_points]
         volume_ids = [get_volume_id(conn, bdev) for bdev in block_devices]
-        mysql = connect_mysql(config)
-        lock_mysql(mysql)
+
+        if not config.no_mysql:
+            mysql = connect_mysql(config)
+            lock_mysql(mysql)
 
         for mount_point in config.mount_points:
             freeze_fs(mount_point)
@@ -134,7 +137,11 @@ def main():
             tag_snapshot(snapshot, mount_point, config.tags)
     except Exception, e:
         print "ERROR encountered: %s: %s" % (type(e), e)
-        print "will attempt to unfreeze filesystem and unlock MySQL..."
+        print "will attempt to unfreeze filesystem",
+        if config.no_mysql:
+            print "..."
+        else:
+            print "and unlock MySQL..."
     else:
         declare_victory()
     finally:
