@@ -9,7 +9,7 @@ Homepage: https://github.com/DeviantArt/da-ebs-tools
 
 Package: da-ebs-tools
 Architecture: all
-Depends: ${python:Depends}, python-boto, python-dateutil
+Depends: ${python:Depends}, python-boto, python-dateutil, python-mysqldb
 Description: DeviantArt EBS consistent snapshot and expiration utilities
  This package contains two utilities:
    * da-ebs-snapshot - Lock tables in MySQL, freeze one or more filesystems,
