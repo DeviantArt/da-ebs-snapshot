@@ -1,4 +1,12 @@
-da-ebs-tools (1.1-1) UNRELEASED; urgency=medium
+da-ebs-tools (1.2-1) stable; urgency=medium
+
+  * Fix error if no tags are supplied.
+  * Add python-mysqldb dependency.
+  * Add option to skip MySQL stuff.
+
+ -- Chris Bolt <chris@deviantart.com>  Mon, 02 Mar 2015 08:03:30 -0800
+
+da-ebs-tools (1.1-1) stable; urgency=medium
 
   * make da-prune-snapshots handle multiple regions
 
