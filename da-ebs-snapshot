@@ -72,6 +72,16 @@ def lock_mysql(mysql):
     mysql.execute('FLUSH TABLES WITH READ LOCK')
 
 
+def save_master_info(mysql):
+    print "saving binlog position to backup_host.info"
+
+    mysql.execute('SHOW MASTER STATUS')
+    log_file, log_pos, ignore, ignore = mysql.fetchone()
+
+    with open('/var/lib/mysql/backup_host.info', 'w') as coordinates_file:
+        print >> coordinates_file, log_file, log_pos, socket.getfqdn()
+
+
 def freeze_fs(mount_point):
     print "freezing filesystem mounted at", mount_point
     output = subprocess.check_output(['/sbin/fsfreeze', '-f', mount_point])
@@ -128,6 +138,7 @@ def main():
         if not config.no_mysql:
             mysql = connect_mysql(config)
             lock_mysql(mysql)
+            save_master_info(mysql)
 
         for mount_point in config.mount_points:
             freeze_fs(mount_point)
