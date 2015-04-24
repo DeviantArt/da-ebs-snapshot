@@ -75,11 +75,15 @@ def lock_mysql(mysql):
 def save_master_info(mysql):
     print "saving binlog position to backup_host.info"
 
-    mysql.execute('SHOW MASTER STATUS')
-    log_file, log_pos, ignore, ignore = mysql.fetchone()
+    rows = mysql.execute('SHOW MASTER STATUS')
 
-    with open('/var/lib/mysql/backup_host.info', 'w') as coordinates_file:
-        print >> coordinates_file, log_file, log_pos, socket.getfqdn()
+    if rows == 0:
+        print "  (skipping because binary logging is not enabled)"
+    else:
+        log_file, log_pos, ignore, ignore = mysql.fetchone()
+
+        with open('/var/lib/mysql/backup_host.info', 'w') as coordinates_file:
+            print >> coordinates_file, log_file, log_pos, socket.getfqdn()
 
 
 def freeze_fs(mount_point):
