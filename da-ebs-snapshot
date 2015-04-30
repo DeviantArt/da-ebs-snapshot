@@ -9,7 +9,6 @@ import subprocess
 import boto.ec2
 import boto.utils
 import argparse
-import MySQLdb
 
 from da_aws import connect_ec2, get_my_volumes
 
@@ -62,6 +61,8 @@ def get_volume_id(conn, block_device):
 
 def connect_mysql(config):
     print "connecting to MySQL"
+
+    import MySQLdb
 
     conn = MySQLdb.connect(read_default_file='/root/.my.cnf')
     return conn.cursor()
