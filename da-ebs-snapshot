@@ -9,6 +9,8 @@ import subprocess
 import boto.ec2
 import boto.utils
 import argparse
+import random
+import time
 
 from da_aws import connect_ec2, get_my_volumes
 
@@ -22,6 +24,7 @@ def parse_args():
     parser.add_argument('--secret-access-key')
     parser.add_argument('-t', '--tag', dest='tags', action='append', default=[], metavar='NAME=VALUE')
     parser.add_argument('-m', '--no-mysql', action='store_true', help="don't perform mysql steps")
+    parser.add_argument('-s', '--splay', default=0, type=int, help="sleep a random number of seconds up to this before running snapshot")
 
     args = parser.parse_args()
     return args
@@ -131,6 +134,12 @@ def declare_victory():
 
 def main():
     config = parse_args()
+
+    if config.splay > 0:
+        sleep_secs = random.randint(0, config.splay)
+        print "sleeping for %d seconds..." % sleep_secs
+        time.sleep(sleep_secs)
+
     generate_uuid(config)
     conn = connect_ec2(config.access_key_id, config.secret_access_key)
 
