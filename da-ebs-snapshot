@@ -108,12 +108,12 @@ def create_snapshot(conn, volume_id):
     return snapshot
 
 
-def tag_snapshot(snapshot, mount_point, additional_tags=[]):
-    snapshot.add_tag('Name', get_snapshot_description(mount_point))
-
+def tag_snapshot(conn, snapshot, mount_point, additional_tags=[]):
+    tags = {'Name': get_snapshot_description(mount_point)}
     for tag in additional_tags:
         name, value = tag.split('=', 1)
-        snapshot.add_tag(name, value)
+        tags[name] = value
+    conn.create_tags([snapshot.id], tags)
 
 
 def unfreeze_fs(mount_point):
@@ -159,7 +159,7 @@ def main():
 
         for volume_id, mount_point in zip(volume_ids, config.mount_points):
             snapshot = create_snapshot(conn, volume_id)
-            tag_snapshot(snapshot, mount_point, config.tags)
+            tag_snapshot(conn, snapshot, mount_point, config.tags)
     except Exception, e:
         print "ERROR encountered: %s: %s" % (type(e), e)
         print "will attempt to unfreeze filesystem",
