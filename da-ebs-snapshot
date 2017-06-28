@@ -84,7 +84,7 @@ def save_master_info(mysql):
     if rows == 0:
         print "  (skipping because binary logging is not enabled)"
     else:
-        log_file, log_pos, ignore, ignore = mysql.fetchone()
+        log_file, log_pos = mysql.fetchone()[:2]
 
         with open('/var/lib/mysql/backup_host.info', 'w') as coordinates_file:
             print >> coordinates_file, log_file, log_pos, socket.getfqdn()
