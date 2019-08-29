@@ -1,3 +1,9 @@
+da-ebs-tools (1.6-1) stable; urgency=medium
+
+  * Make normalize_bdev work with nvme devices
+
+ -- Chris Bolt <chris@deviantart.com>  Thu, 29 Aug 2019 09:30:50 -0700
+
 da-ebs-tools (1.5-1) stable; urgency=medium
 
   * Fix save_master_info() to work if SHOW MASTER STATUS returns extra columns

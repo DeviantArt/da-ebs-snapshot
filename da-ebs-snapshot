@@ -47,6 +47,10 @@ def get_block_device(mount_point):
 
 
 def normalize_bdev(bdev):
+    if bdev.startswith('/dev/nvme'):
+        # for nvme devices, nvme1 is equivalent to xvdf
+        # 101 = ord('e')
+        return '/dev/xvd' + chr(int(bdev[9]) + 101)
     return re.sub('^/dev/s', '/dev/xv', bdev)
 
 
